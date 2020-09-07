@@ -1,15 +1,23 @@
 import os
 import re
 import json
+import logging
 import urllib.parse as urlparse
-from urllib.parse import parse_qs
-from mimetypes import guess_type
 from bot.config import Messages
+from mimetypes import guess_type
+from urllib.parse import parse_qs
 from bot.helpers.utils import humanbytes
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
 from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaFileUpload
 from bot.helpers.sql_helper import gDriveDB, idsDB
+
+
+LOGGER = logging.getLogger(__name__)
+logging.getLogger('googleapiclient.discovery').setLevel(logging.ERROR)
+logging.getLogger('oauth2client.transport').setLevel(logging.ERROR)
+logging.getLogger('oauth2client.client').setLevel(logging.ERROR)
+
 
 class GoogleDrive:
   def __init__(self, user_id):
@@ -60,8 +68,12 @@ class GoogleDrive:
       except HttpError as err:
           if err.resp.get('content-type', '').startswith('application/json'):
               reason = json.loads(err.content).get('error').get('errors')[0].get('reason')
-              if reason == 'userRateLimitExceeded' or reason == 'dailyLimitExceeded':
-                 return 'LimitExceeded'
+              if reason == 'userRateLimitExceeded':
+                sleep(62)
+              elif reason == 'rateLimitExceedes':
+                sleep(20)
+              elif reason == 'dailyLimitExceeded':
+                 raise IndexError('LimitExceeded')
               else:
                  return 'error'
 
@@ -85,7 +97,7 @@ class GoogleDrive:
                 self.copyFile(file.get('id'), parent_id)
                 new_id = parent_id
             except Exception as e:
-                return 'error'
+                return IndexError(e)
       return new_id
 
   def create_directory(self, directory_name):
@@ -111,6 +123,8 @@ class GoogleDrive:
         reason = json.loads(err.content).get('error').get('errors')[0].get('reason')
         if 'notFound' in reason:
           return Messages.FILE_NOT_FOUND_MESSAGE.format(file_id)
+        elif 'LimitExceeded' in reason.lower():
+          return Messages.RATE_LIMIT_EXCEEDED_MESSAGE
         else:
           return f"**ERROR:** ```{str(err).replace('>', '').replace('<', '')}```"
     except Exception as e:
@@ -179,5 +193,24 @@ class GoogleDrive:
     else:
       return False, Messages.NOT_FOLDER_LINK
     
+  def delete_file(self, link: str):
+    try:
+      file_id = self.getIdFromUrl(link)
+    except (IndexError, KeyError):
+      return Messages.INVALID_GDRIVE_URL
+    try:
+      self.__service.files().delete(fileId=file_id, supportsTeamDrives=True).execute()
+      return Messages.DELETED_SUCCESSFULLY.format(file_id)
+    except HttpError as err:
+      if err.resp.get('content-type', '').startswith('application/json'):
+        reason = json.loads(err.content).get('error').get('errors')[0].get('reason')
+        if 'notFound' in reason:
+          return Messages.FILE_NOT_FOUND_MESSAGE.format(file_id)
+        elif 'insufficientFilePermissions' in reason:
+          return Messages.INSUFFICIENT_PERMISSONS.format(file_id)
+        else:
+          return f"**ERROR:** ```{str(err).replace('>', '').replace('<', '')}```"
+      
+      
   def authorize(self, creds):
     return build('drive', 'v3', credentials=creds, cache_discovery=False)

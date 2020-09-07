@@ -8,19 +8,16 @@
 - [X] Custom Upload Folder.
 - [X] TeamDrive Support.
 - [X] Clone/Copy Google Drive Files.
+- [X] Delete Google Drive Files.
 
 ## ToDo 
 - [ ] Handle more exceptions.
 - [ ] LOGGER support.
 - [ ] Service account support.
-- [ ] Delete Google Drive Files.
 - [ ] Empty Google Drive trash.
 
 ## Deploy on [Heroku](https://heroku.com)
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/viperadnan-git/gdrive-telegram-bot/tree/master)
-
-- Note: Bot is in beta stage. Maybe throw some errors.
-
 
 ## Deploying
 
@@ -57,7 +54,7 @@ python3 -m bot
 
 ## Credits
 - [Dan](https://github.com/delivrance) for creating [PyroGram](https://pyrogram.org)
-- [Spechide](https://github.com/Spechide) for [gDrive_sql.py](./bot/helpers/sql_helpers/gDriveDB.py)
+- [Spechide](https://github.com/Spechide) for [gDriveDB.py](./bot/helpers/sql_helper/gDriveDB.py)
 - [Shivam Jha](https://github.com/lzzy12) for [Clone Feature](./bot/helpers/gdrive_utils/gDrive.py) from [python-aria-mirror-bot](https://github.com/lzzy12/python-aria-mirror-bot)
 
 ## Copyright & License

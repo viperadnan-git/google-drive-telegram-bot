@@ -7,6 +7,7 @@ from bot.helpers.downloader import download_file
 from bot.helpers.gdrive_utils import GoogleDrive 
 from bot import DOWNLOAD_DIRECTORY, LOGGER
 from bot.config import Messages, BotCommands
+from pyrogram.errors import FloodWait
 
 @Client.on_message(filters.private & filters.incoming & (filters.command(BotCommands.Download) | filters.document | filters.audio | filters.video | filters.photo | filters.regex('^(ht|f)tp*')) & CustomFilters.auth_users)
 def _download(client, message):
