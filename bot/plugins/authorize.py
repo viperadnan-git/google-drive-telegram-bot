@@ -1,0 +1,71 @@
+import re
+import json
+from httplib2 import Http
+from bot.config import Messages
+from pyrogram import Client, filters
+from oauth2client.client import OAuth2WebServerFlow, FlowExchangeError
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from bot.helpers.sql_helper import gDriveDB
+from bot.config import BotCommands
+from bot.helpers.utils import CustomFilters
+
+
+OAUTH_SCOPE = "https://www.googleapis.com/auth/drive"
+REDIRECT_URI = "urn:ietf:wg:oauth:2.0:oob"
+G_DRIVE_DIR_MIME_TYPE = "application/vnd.google-apps.folder"
+G_DRIVE_CLIENT_ID = "202264815644.apps.googleusercontent.com"
+G_DRIVE_CLIENT_SECRET = "X4Z3ca8xfWDb1Voo-F9a7ZxJ"
+flow = None
+
+@Client.on_message(filters.private & filters.incoming & filters.command(BotCommands.Authorize))
+async def _auth(client, message):
+  creds = gDriveDB.search(message.from_user.id)
+  if creds is not None:
+    creds.refresh(Http())
+    gDriveDB._set(message.from_user.id, creds)
+    await message.reply_text(Messages.ALREADY_AUTH, quote=True)
+  else:
+    global flow
+    try:
+      flow = OAuth2WebServerFlow(
+              G_DRIVE_CLIENT_ID,
+              G_DRIVE_CLIENT_SECRET,
+              OAUTH_SCOPE,
+              redirect_uri=REDIRECT_URI
+      )
+      auth_url = flow.step1_get_authorize_url()
+      await message.reply_text(Messages.AUTH_TEXT.format(auth_url), quote=True)
+    except Exception as e:
+      await message.reply_text(f"**ERROR:** ```{e}```", quote=True)
+
+@Client.on_message(filters.private & filters.incoming & filters.command(BotCommands.Revoke) & CustomFilters.auth_users)
+def _revoke(client, message):
+  user_id = message.from_user.id
+  try:
+    gDriveDB._clear(user_id)
+    message.reply_text(Messages.REVOKED, quote=True)
+  except Exception as e:
+    message.reply_text(f"**ERROR:** ```{e}```", quote=True)
+
+
+@Client.on_message(filters.private & filters.incoming & filters.text & ~CustomFilters.auth_users)
+async def _token(client, message):
+  token = message.text.split()[-1]
+  WORD = len(token)
+  if WORD == 57 and token[1] == "/":
+    creds = None
+    global flow
+    if flow:
+      try:
+        sent_message = await message.reply_text(text="**Checking received code...**", quote=True)
+        creds = flow.step2_exchange(message.text)
+        gDriveDB._set(message.from_user.id, creds)
+        await sent_message.edit(Messages.AUTH_SUCCESSFULLY)
+        flow = None
+      except FlowExchangeError:
+        await sent_message.edit(Messages.INVALID_AUTH_CODE)
+      except Exception as e:
+        await sent_message.edit(f"**ERROR:** ```{e}```")
+    else:
+        await message.reply_text(Messages.FLOW_IS_NONE, quote=True)
