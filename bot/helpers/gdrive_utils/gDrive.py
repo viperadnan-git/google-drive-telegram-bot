@@ -11,9 +11,9 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 from bot.helpers.sql_helper import gDriveDB, idsDB
+from bot import LOGGER
 
 
-LOGGER = logging.getLogger(__name__)
 logging.getLogger('googleapiclient.discovery').setLevel(logging.ERROR)
 logging.getLogger('oauth2client.transport').setLevel(logging.ERROR)
 logging.getLogger('oauth2client.client').setLevel(logging.ERROR)
@@ -70,7 +70,7 @@ class GoogleDrive:
               reason = json.loads(err.content).get('error').get('errors')[0].get('reason')
               if reason == 'userRateLimitExceeded':
                 sleep(62)
-              elif reason == 'rateLimitExceedes':
+              elif reason == 'rateLimitExceeded':
                 sleep(20)
               elif reason == 'dailyLimitExceeded':
                  raise IndexError('LimitExceeded')
@@ -143,8 +143,8 @@ class GoogleDrive:
       except Exception as e:
          return f'**ERROR:** ```{e}```'
 
-  def upload_file(self, file_path):
-      mime_type = guess_type(file_path)[0]
+  def upload_file(self, file_path, mimeType=None):
+      mime_type = mimeType if mimeType else guess_type(file_path)[0]
       mime_type = mime_type if mime_type else "text/plain"
       media_body = MediaFileUpload(
           file_path,
@@ -160,6 +160,7 @@ class GoogleDrive:
           "mimeType": mime_type,
       }
       body["parents"] = [self.__parent_id]
+      LOGGER.info(f'Upload: {file_path}')
       try:
         uploaded_file = self.__service.files().create(body=body, media_body=media_body, fields='id', supportsTeamDrives=True).execute()
         file_id = uploaded_file.get('id')
@@ -211,6 +212,13 @@ class GoogleDrive:
         else:
           return f"**ERROR:** ```{str(err).replace('>', '').replace('<', '')}```"
       
-      
+  def emptyTrash(self):
+    try:
+      self.__service.files().emptyTrash().execute()
+      return Messages.EMPTY_TRASH
+    except HttpError as err:
+      return f"**ERROR:** ```{str(err).replace('>', '').replace('<', '')}```"
+
+
   def authorize(self, creds):
     return build('drive', 'v3', credentials=creds, cache_discovery=False)

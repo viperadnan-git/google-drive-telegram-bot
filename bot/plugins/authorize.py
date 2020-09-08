@@ -1,6 +1,7 @@
 import re
 import json
 from httplib2 import Http
+from bot import LOGGER
 from bot.config import Messages
 from pyrogram import Client, filters
 from oauth2client.client import OAuth2WebServerFlow, FlowExchangeError
@@ -20,10 +21,11 @@ flow = None
 
 @Client.on_message(filters.private & filters.incoming & filters.command(BotCommands.Authorize))
 async def _auth(client, message):
-  creds = gDriveDB.search(message.from_user.id)
+  user_id = message.from_user.id
+  creds = gDriveDB.search(user_id)
   if creds is not None:
     creds.refresh(Http())
-    gDriveDB._set(message.from_user.id, creds)
+    gDriveDB._set(user_id, creds)
     await message.reply_text(Messages.ALREADY_AUTH, quote=True)
   else:
     global flow
@@ -35,6 +37,7 @@ async def _auth(client, message):
               redirect_uri=REDIRECT_URI
       )
       auth_url = flow.step1_get_authorize_url()
+      LOGGER.info(f'AuthURL:{user_id}')
       await message.reply_text(Messages.AUTH_TEXT.format(auth_url), quote=True)
     except Exception as e:
       await message.reply_text(f"**ERROR:** ```{e}```", quote=True)
@@ -44,6 +47,7 @@ def _revoke(client, message):
   user_id = message.from_user.id
   try:
     gDriveDB._clear(user_id)
+    LOGGER.info(f'Revoke:{user_id}')
     message.reply_text(Messages.REVOKED, quote=True)
   except Exception as e:
     message.reply_text(f"**ERROR:** ```{e}```", quote=True)
@@ -58,9 +62,10 @@ async def _token(client, message):
     global flow
     if flow:
       try:
-        sent_message = await message.reply_text(text="**Checking received code...**", quote=True)
+        sent_message = await message.reply_text("🕵️**Checking received code...**", quote=True)
         creds = flow.step2_exchange(message.text)
         gDriveDB._set(message.from_user.id, creds)
+        LOGGER.info(f'AuthSuccess: {user_id}')
         await sent_message.edit(Messages.AUTH_SUCCESSFULLY)
         flow = None
       except FlowExchangeError:

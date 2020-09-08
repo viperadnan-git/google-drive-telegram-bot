@@ -7,42 +7,63 @@ from bot.helpers.downloader import download_file
 from bot.helpers.gdrive_utils import GoogleDrive 
 from bot import DOWNLOAD_DIRECTORY, LOGGER
 from bot.config import Messages, BotCommands
-from pyrogram.errors import FloodWait
+from pyrogram.errors import FloodWait, RPCError
 
-@Client.on_message(filters.private & filters.incoming & (filters.command(BotCommands.Download) | filters.document | filters.audio | filters.video | filters.photo | filters.regex('^(ht|f)tp*')) & CustomFilters.auth_users)
+@Client.on_message(filters.private & filters.incoming & filters.text & (filters.command(BotCommands.Download) | filters.regex('^(ht|f)tp*')) & CustomFilters.auth_users)
 def _download(client, message):
   user_id = message.from_user.id
-  LOGGER.info(f'Download request from {user_id}')
-  sent_message = message.reply_text('**Checking link...**', quote=True)
   if not message.media:
+    sent_message = message.reply_text('🕵️**Checking link...**', quote=True)
     if message.command:
       link = message.command[1]
     else:
       link = message.text
-    if '|' in link:
-      link, filename = link.split('|')
-      link = link.strip()
-      filename.strip()
-      dl_path = os.path.join(f'{DOWNLOAD_DIRECTORY}/{filename}')
+    if 'drive.google.com' in link:
+      sent_message.edit(Messages.CLONING.format(link))
+      LOGGER.info(f'Copy:{user_id}: {link}')
+      msg = GoogleDrive(user_id).clone(link)
+      sent_message.edit(msg)
     else:
-      link = link.strip()
-      filename = os.path.basename(link)
-      dl_path = os.path.join(f'{DOWNLOAD_DIRECTORY}/')
-    sent_message.edit(Messages.DOWNLOADING.format(filename))
-    result, file_path = download_file(link, dl_path)
-    if result == False:
-      sent_message.edit(Messages.DOWNLOAD_ERROR.format(file_path, link))
-      return
-  elif message.media:
-    sent_message.edit(Messages.DOWNLOAD_TG_FILE)
-    try:
-      file_path = client.download_media(message)
-    except FloodWait as e:
-      sleep(e.x)
-    except Exception as e:
-      sent_message.edit(f'**ERROR:** ```{e}```')
-      return
-  sent_message.edit(Messages.DOWNLOADED_SUCCESSFULLY.format(os.path.basename(file_path), humanbytes(os.path.getsize(file_path))))
-  msg = GoogleDrive(user_id).upload_file(file_path)
-  sent_message.edit(msg)
+      if '|' in link:
+        link, filename = link.split('|')
+        link = link.strip()
+        filename.strip()
+        dl_path = os.path.join(f'{DOWNLOAD_DIRECTORY}/{filename}')
+      else:
+        link = link.strip()
+        filename = os.path.basename(link)
+        dl_path = DOWNLOAD_DIRECTORY
+      LOGGER.info(f'Download:{user_id}: {link}')
+      sent_message.edit(Messages.DOWNLOADING.format(link))
+      result, file_path = download_file(link, dl_path)
+      if result == True:
+        sent_message.edit(Messages.DOWNLOADED_SUCCESSFULLY.format(os.path.basename(file_path), humanbytes(os.path.getsize(file_path))))
+        msg = GoogleDrive(user_id).upload_file(file_path)
+        sent_message.edit(msg)
+        LOGGER.info(f'Deleteing: {file_path}')
+        os.remove(file_path)
+      else:
+        sent_message.edit(Messages.DOWNLOAD_ERROR.format(file_path, link))
+
+
+@Client.on_message(filters.private & filters.incoming & (filters.document | filters.audio | filters.video) & CustomFilters.auth_users)
+def _telegram_file(client, message):
+  user_id = message.from_user.id
+  sent_message = message.reply_text('🕵️**Checking File...**', quote=True)
+  if message.document:
+    file = message.document
+  elif message.video:
+    file = message.video
+  elif message.audio:
+    file = message.audio
+  sent_message.edit(Messages.DOWNLOAD_TG_FILE.format(file.file_name, humanbytes(file.file_size), file.mime_type))
+  LOGGER.info(f'Download:{user_id}: {file.file_id}')
+  try:
+    file_path = message.download(file_name=DOWNLOAD_DIRECTORY)
+    sent_message.edit(Messages.DOWNLOADED_SUCCESSFULLY.format(os.path.basename(file_path), humanbytes(os.path.getsize(file_path))))
+    msg = GoogleDrive(user_id).upload_file(file_path, file.mime_type)
+    sent_message.edit(msg)
+  except RPCError:
+    sent_message.edit(Messages.WENT_WRONG)
+  LOGGER.info(f'Deleteing: {file_path}')
   os.remove(file_path)
