@@ -62,9 +62,10 @@ async def _token(client, message):
     global flow
     if flow:
       try:
+        user_id = message.from_user.id
         sent_message = await message.reply_text("🕵️**Checking received code...**", quote=True)
         creds = flow.step2_exchange(message.text)
-        gDriveDB._set(message.from_user.id, creds)
+        gDriveDB._set(user_id, creds)
         LOGGER.info(f'AuthSuccess: {user_id}')
         await sent_message.edit(Messages.AUTH_SUCCESSFULLY)
         flow = None
