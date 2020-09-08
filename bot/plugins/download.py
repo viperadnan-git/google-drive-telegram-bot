@@ -3,7 +3,7 @@ from time import sleep
 from pyrogram import Client, filters
 from bot.helpers.sql_helper import gDriveDB, idsDB
 from bot.helpers.utils import CustomFilters, humanbytes
-from bot.helpers.downloader import download_file
+from bot.helpers.downloader import download_file, utube_dl
 from bot.helpers.gdrive_utils import GoogleDrive 
 from bot import DOWNLOAD_DIRECTORY, LOGGER
 from bot.config import Messages, BotCommands
@@ -67,3 +67,23 @@ def _telegram_file(client, message):
     sent_message.edit(Messages.WENT_WRONG)
   LOGGER.info(f'Deleteing: {file_path}')
   os.remove(file_path)
+
+@Client.on_message(filters.incoming & filters.private & filters.command(BotCommands.Ytdl) & CustomFilters.auth_users)
+def _ytdl(client, message):
+  user_id = message.from_user.id
+  if len(message.command) > 1:
+    sent_message = message.reply_text('🕵️**Checking Link...**', quote=True)
+    link = message.command[1]
+    LOGGER.info(f'YTDL:{user_id}: {link}')
+    sent_message.edit(Messages.DOWNLOADING.format(link))
+    result, file_path = utube_dl(link)
+    if result:
+      sent_message.edit(Messages.DOWNLOADED_SUCCESSFULLY.format(os.path.basename(file_path), humanbytes(os.path.getsize(file_path))))
+      msg = GoogleDrive(user_id).upload_file(file_path)
+      sent_message.edit(msg)
+      LOGGER.info(f'Deleteing: {file_path}')
+      os.remove(file_path)
+    else:
+      sent_message.edit(Messages.DOWNLOAD_ERROR.format(file_path, link))
+  else:
+    message.reply_text(Messages.PROVIDE_YTDL_LINK, quote=True)

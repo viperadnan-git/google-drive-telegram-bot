@@ -123,8 +123,6 @@ class GoogleDrive:
         reason = json.loads(err.content).get('error').get('errors')[0].get('reason')
         if 'notFound' in reason:
           return Messages.FILE_NOT_FOUND_MESSAGE.format(file_id)
-        elif 'LimitExceeded' in reason.lower():
-          return Messages.RATE_LIMIT_EXCEEDED_MESSAGE
         else:
           return f"**ERROR:** ```{str(err).replace('>', '').replace('<', '')}```"
     except Exception as e:
