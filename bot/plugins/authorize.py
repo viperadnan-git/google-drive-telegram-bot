@@ -4,6 +4,7 @@ from httplib2 import Http
 from bot import LOGGER
 from bot.config import Messages
 from pyrogram import Client, filters
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from oauth2client.client import OAuth2WebServerFlow, FlowExchangeError
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -38,7 +39,13 @@ async def _auth(client, message):
       )
       auth_url = flow.step1_get_authorize_url()
       LOGGER.info(f'AuthURL:{user_id}')
-      await message.reply_text(Messages.AUTH_TEXT.format(auth_url), quote=True)
+      await message.reply_text(
+        text=Messages.AUTH_TEXT.format(auth_url),
+        quote=True,
+        reply_markup=InlineKeyboardMarkup(
+                  [[InlineKeyboardButton("Authorization URL", url=auth_url)]]
+              )
+        )
     except Exception as e:
       await message.reply_text(f"**ERROR:** ```{e}```", quote=True)
 
