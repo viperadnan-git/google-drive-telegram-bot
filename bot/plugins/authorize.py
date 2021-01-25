@@ -31,7 +31,7 @@ async def _auth(client, message):
   else:
     global flow
     try:
-      flow = OAuth2WebServerFlow(
+      flow = OAuth2WebServerFlow( 
               G_DRIVE_CLIENT_ID,
               G_DRIVE_CLIENT_SECRET,
               OAUTH_SCOPE,
@@ -64,7 +64,7 @@ def _revoke(client, message):
 async def _token(client, message):
   token = message.text.split()[-1]
   WORD = len(token)
-  if WORD == 57 and token[1] == "/":
+  if WORD == 62 and token[1] == "/":
     creds = None
     global flow
     if flow:
