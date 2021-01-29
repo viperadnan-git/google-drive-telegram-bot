@@ -72,7 +72,7 @@ def _telegram_file(client, message):
   LOGGER.info(f'Deleteing: {file_path}')
   os.remove(file_path)
 
-@Client.on_message(filters.incoming & filters.private & filters.command(BotCommands.Ytdl) & CustomFilters.auth_users)
+@Client.on_message(filters.incoming & filters.private & filters.command(BotCommands.YtDl) & CustomFilters.auth_users)
 def _ytdl(client, message):
   user_id = message.from_user.id
   if len(message.command) > 1:
