@@ -7,9 +7,12 @@ from bot import LOGGER
 @Client.on_message(filters.private & filters.incoming & filters.command(BotCommands.Delete) & CustomFilters.auth_users)
 def _delete(client, message):
   user_id = message.from_user.id
-  if len(message.command) > 1:
+  if len(message.command) > 1 or message.reply_to_message.entities[1].url:
     sent_message = message.reply_text('🕵️**Checking Link...**', quote=True)
-    link = message.command[1]
+    if len(message.command) > 1:
+      link = message.command[1]
+    elif message.reply_to_message:
+      link = message.reply_to_message.entities[1].url
     LOGGER.info(f'Delete:{user_id}: {link}')
     result = GoogleDrive(user_id).delete_file(link)
     sent_message.edit(result)

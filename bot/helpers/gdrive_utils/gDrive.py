@@ -2,6 +2,9 @@ import os
 import re
 import json
 import logging
+from bot import LOGGER
+from time import sleep
+from tenacity import *
 import urllib.parse as urlparse
 from bot.config import Messages
 from mimetypes import guess_type
@@ -11,7 +14,6 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 from bot.helpers.sql_helper import gDriveDB, idsDB
-from bot import LOGGER
 
 
 logging.getLogger('googleapiclient.discovery').setLevel(logging.ERROR)
@@ -37,7 +39,8 @@ class GoogleDrive:
       parsed = urlparse.urlparse(link)
       return parse_qs(parsed.query)['id'][0]
 
-
+  @retry(wait=wait_exponential(multiplier=2, min=3, max=6), stop=stop_after_attempt(5),
+    retry=retry_if_exception_type(HttpError), before=before_log(LOGGER, logging.DEBUG))
   def getFilesByFolderId(self, folder_id):
       page_token = None
       q = f"'{folder_id}' in parents"
@@ -58,24 +61,20 @@ class GoogleDrive:
       return files
 
 
+  @retry(wait=wait_exponential(multiplier=2, min=3, max=6), stop=stop_after_attempt(5),
+    retry=retry_if_exception_type(HttpError), before=before_log(LOGGER, logging.DEBUG))
   def copyFile(self, file_id, dest_id):
-      body = {
-          'parents': [dest_id]
-      }
+      body = {'parents': [dest_id]}
       try:
           res = self.__service.files().copy(supportsAllDrives=True,fileId=file_id,body=body).execute()
           return res
       except HttpError as err:
           if err.resp.get('content-type', '').startswith('application/json'):
               reason = json.loads(err.content).get('error').get('errors')[0].get('reason')
-              if reason == 'userRateLimitExceeded':
-                sleep(62)
-              elif reason == 'rateLimitExceeded':
-                sleep(20)
-              elif reason == 'dailyLimitExceeded':
+              if reason == 'dailyLimitExceeded':
                  raise IndexError('LimitExceeded')
               else:
-                 return 'error'
+                 raise err
 
 
   def cloneFolder(self, name, local_path, folder_id, parent_id):
@@ -96,10 +95,12 @@ class GoogleDrive:
             try:
                 self.copyFile(file.get('id'), parent_id)
                 new_id = parent_id
-            except Exception as e:
-                return IndexError(e)
+            except Exception as err:
+                return err
       return new_id
 
+  @retry(wait=wait_exponential(multiplier=2, min=3, max=6), stop=stop_after_attempt(5),
+    retry=retry_if_exception_type(HttpError), before=before_log(LOGGER, logging.DEBUG))
   def create_directory(self, directory_name):
           file_metadata = {
               "name": directory_name,
@@ -118,29 +119,24 @@ class GoogleDrive:
       return Messages.INVALID_GDRIVE_URL
     try:
       meta = self.__service.files().get(supportsAllDrives=True, fileId=file_id, fields="name,id,mimeType,size").execute()
-    except HttpError as err:
-      if err.resp.get('content-type', '').startswith('application/json'):
-        reason = json.loads(err.content).get('error').get('errors')[0].get('reason')
-        if 'notFound' in reason:
-          return Messages.FILE_NOT_FOUND_MESSAGE.format(file_id)
-        else:
-          return f"**ERROR:** ```{str(err).replace('>', '').replace('<', '')}```"
-    except Exception as e:
-      return f"**ERROR:** ```{str(e).replace('>', '').replace('<', '')}```"
-    if meta.get("mimeType") == self.__G_DRIVE_DIR_MIME_TYPE:
-       dir_id = self.create_directory(meta.get('name'))
-       try:
-         result = self.cloneFolder(meta.get('name'), meta.get('name'), meta.get('id'), dir_id)
-         return Messages.COPIED_SUCCESSFULLY.format(meta.get('name'), self.__G_DRIVE_DIR_BASE_DOWNLOAD_URL.format(dir_id), humanbytes(self.transferred_size))
-       except Exception as e:
-         return f'**ERROR:** ```{e}```'
-    else:
-      try:
-         file = self.copyFile(meta.get('id'), self.__parent_id)
-         return Messages.COPIED_SUCCESSFULLY.format(file.get('name'), self.__G_DRIVE_BASE_DOWNLOAD_URL.format(file.get('id')), humanbytes(int(meta.get('size'))))
-      except Exception as e:
-         return f'**ERROR:** ```{e}```'
+      if meta.get("mimeType") == self.__G_DRIVE_DIR_MIME_TYPE:
+        dir_id = self.create_directory(meta.get('name'))
+        result = self.cloneFolder(meta.get('name'), meta.get('name'), meta.get('id'), dir_id)
+        return Messages.COPIED_SUCCESSFULLY.format(meta.get('name'), self.__G_DRIVE_DIR_BASE_DOWNLOAD_URL.format(dir_id), humanbytes(self.transferred_size))
+      else:
+        file = self.copyFile(meta.get('id'), self.__parent_id)
+        return Messages.COPIED_SUCCESSFULLY.format(file.get('name'), self.__G_DRIVE_BASE_DOWNLOAD_URL.format(file.get('id')), humanbytes(int(meta.get('size'))))
+    except Exception as err:
+      if isinstance(err, RetryError):
+        LOGGER.info(f"Total Attempts: {err.last_attempt.attempt_number}")
+        err = err.last_attempt.exception()
+      err = str(err).replace('>', '').replace('<', '')
+      LOGGER.error(err)
+      return f"**ERROR:** ```{err}```"
 
+
+  @retry(wait=wait_exponential(multiplier=2, min=3, max=6), stop=stop_after_attempt(5),
+    retry=retry_if_exception_type(HttpError), before=before_log(LOGGER, logging.DEBUG))
   def upload_file(self, file_path, mimeType=None):
       mime_type = mimeType if mimeType else guess_type(file_path)[0]
       mime_type = mime_type if mime_type else "text/plain"
@@ -169,10 +165,12 @@ class GoogleDrive:
           if reason == 'userRateLimitExceeded' or reason == 'dailyLimitExceeded':
             return Messages.RATE_LIMIT_EXCEEDED_MESSAGE
           else:
-            return f"**ERROR:** {err.replace('<', '').replace('>', '')}"
+            return f"**ERROR:** {reason}"
       except Exception as e:
         return f"**ERROR:** ```{e}```"
 
+  @retry(wait=wait_exponential(multiplier=2, min=3, max=6), stop=stop_after_attempt(5),
+    retry=retry_if_exception_type(HttpError), before=before_log(LOGGER, logging.DEBUG))
   def checkFolderLink(self, link: str):
     try:
       file_id = self.getIdFromUrl(link)
@@ -191,7 +189,9 @@ class GoogleDrive:
       return True, file_id
     else:
       return False, Messages.NOT_FOLDER_LINK
-    
+
+  @retry(wait=wait_exponential(multiplier=2, min=3, max=6), stop=stop_after_attempt(5),
+    retry=retry_if_exception_type(HttpError), before=before_log(LOGGER, logging.DEBUG))
   def delete_file(self, link: str):
     try:
       file_id = self.getIdFromUrl(link)
