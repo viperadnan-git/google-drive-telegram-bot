@@ -1,7 +1,7 @@
 import re
 import json
 from httplib2 import Http
-from bot import LOGGER
+from bot import LOGGER, G_DRIVE_CLIENT_ID, G_DRIVE_CLIENT_SECRET
 from bot.config import Messages
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -15,10 +15,6 @@ from bot.helpers.utils import CustomFilters
 
 OAUTH_SCOPE = "https://www.googleapis.com/auth/drive"
 REDIRECT_URI = "urn:ietf:wg:oauth:2.0:oob"
-
-#This credentials are taken from https://rclone.org change it accordingly.
-G_DRIVE_CLIENT_ID = "202264815644.apps.googleusercontent.com"
-G_DRIVE_CLIENT_SECRET = "X4Z3ca8xfWDb1Voo-F9a7ZxJ"
 
 flow = None
 

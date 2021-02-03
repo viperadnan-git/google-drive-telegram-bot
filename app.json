@@ -23,11 +23,20 @@
       "value": "999197022 939425014"
     },
     "SUPPORT_CHAT_LINK": {
-      "description": "Support Chat link in valid url format."
+      "description": "Support Chat link in valid url format.",
+      "value": "https://viperadnan-git.github.io"
     },
     "DOWNLOAD_DIRECTORY": {
       "description": "Custom path for downloads. Must end with a forward slash.",
       "value": "./downloads/"
+    },
+    "G_DRIVE_CLIENT_ID": {
+      "description": "Google Drive Client ID from Google Cloud Platform",
+      "value": "202264815644.apps.googleusercontent.com"
+    },
+    "G_DRIVE_CLIENT_SECRET": {
+      "description": "Google Drive Client Secret from Google Cloud Platform",
+      "value": "X4Z3ca8xfWDb1Voo-F9a7ZxJ"
     }
   },
    "addons": [{
