@@ -13,4 +13,3 @@ google-auth-oauthlib
 youtube_dl
 ffmpeg
 tenacity
-python3
