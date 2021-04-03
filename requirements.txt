@@ -4,7 +4,7 @@ pyrogram==1.0.1
 tgcrypto
 oauth2client
 psycopg2-binary
-sqlalchemy
+sqlalchemy==1.3.23
 httplib2
 pySmartDL
 google-api-python-client
