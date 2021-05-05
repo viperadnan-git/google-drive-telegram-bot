@@ -1,7 +1,7 @@
 import re
 import json
 from httplib2 import Http
-from bot import LOGGER
+from bot import LOGGER, G_DRIVE_CLIENT_ID, G_DRIVE_CLIENT_SECRET
 from bot.config import Messages
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -15,9 +15,7 @@ from bot.helpers.utils import CustomFilters
 
 OAUTH_SCOPE = "https://www.googleapis.com/auth/drive"
 REDIRECT_URI = "urn:ietf:wg:oauth:2.0:oob"
-G_DRIVE_DIR_MIME_TYPE = "application/vnd.google-apps.folder"
-G_DRIVE_CLIENT_ID = "202264815644.apps.googleusercontent.com"
-G_DRIVE_CLIENT_SECRET = "X4Z3ca8xfWDb1Voo-F9a7ZxJ"
+
 flow = None
 
 @Client.on_message(filters.private & filters.incoming & filters.command(BotCommands.Authorize))
@@ -54,7 +52,7 @@ def _revoke(client, message):
   user_id = message.from_user.id
   try:
     gDriveDB._clear(user_id)
-    LOGGER.info(f'Revoke:{user_id}')
+    LOGGER.info(f'Revoked:{user_id}')
     message.reply_text(Messages.REVOKED, quote=True)
   except Exception as e:
     message.reply_text(f"**ERROR:** ```{e}```", quote=True)
@@ -64,7 +62,7 @@ def _revoke(client, message):
 async def _token(client, message):
   token = message.text.split()[-1]
   WORD = len(token)
-  if WORD == 57 and token[1] == "/":
+  if WORD == 62 and token[1] == "/":
     creds = None
     global flow
     if flow:
