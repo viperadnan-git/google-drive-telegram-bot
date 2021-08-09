@@ -41,4 +41,5 @@ def utube_dl(link):
       if path.endswith(('.avi', '.mov', '.flv', '.wmv', '.3gp','.mpeg', '.webm', '.mp4', '.mkv')) and \
           path.startswith(ytdl.prepare_filename(meta)):
         return True, path
-    return False, 'Something went wrong! No video file exists on server.'
+      else
+           return False, 'Something went wrong! No video file exists on server.'
