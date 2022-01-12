@@ -1,10 +1,10 @@
 class config:
-    BOT_TOKEN = ""
-    APP_ID = ""
-    API_HASH = ""
-    DATABASE_URL = ""
+    BOT_TOKEN = "5013823691:AAHsRIlOUoRqC7A1xwWNf9csbC_IptMzpsY"
+    APP_ID = "7243742"
+    API_HASH = "3924631f96e2caf8912199947abdfeee"
+    DATABASE_URL = "postgres://vndbwvgxieylsv:3374350384240ee13190da684c030bd09a82bea2dcace00e0401c6f7c830462a@ec2-34-230-198-12.compute-1.amazonaws.com:5432/d11m6ubipb9kan"
     SUDO_USERS = "" # Sepearted by space.
-    SUPPORT_CHAT_LINK = ""
+    SUPPORT_CHAT_LINK = "t.me/movieofi"
     DOWNLOAD_DIRECTORY = "./downloads/"
 
 
