@@ -5,7 +5,7 @@ class config:
     DATABASE_URL = "postgres://wxkykoas:jsBq0hTPRsFuMBMWWGfRg-EGZ_0sXbeY@chunee.db.elephantsql.com/wxkykoas"
     SUDO_USERS = "1329015761" # Sepearted by space.
     SUPPORT_CHAT_LINK = "-1001500292507"
-    DOWNLOAD_DIRECTORY = "./downloads/"
+    DOWNLOAD_DIRECTORY = "./ls/"
     G_DRIVE_CLIENT_ID = "683875059692-d2j75obvgih7p76abrdarldbm86p0eur.apps.googleusercontent.com"
     G_DRIVE_CLIENT_SECRET = "GnypC5PaZIxGbYV3AH3TbWK1"
 
