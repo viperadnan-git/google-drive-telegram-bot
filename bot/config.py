@@ -1,13 +1,13 @@
 class config:
-    BOT_TOKEN = ""
-    APP_ID = ""
-    API_HASH = ""
-    DATABASE_URL = ""
-    SUDO_USERS = "" # Sepearted by space.
-    SUPPORT_CHAT_LINK = ""
+    BOT_TOKEN = "5437882509:AAFGfUxffaJxoH4L6-Lr2IRfLEzpwxtTyms"
+    APP_ID = "3578562"
+    API_HASH = "76bbd46bd2f6d3fcb6448337cc21c764"
+    DATABASE_URL = "postgres://klxajzukdtfvde:ea914c38e64008253e026b56b3dddcf0cf480e16b31888a4771f6ee2ec67e42d@ec2-3-213-228-206.compute-1.amazonaws.com:5432/d32pnbrrgooa6c"
+    SUDO_USERS = "1782840890" # Sepearted by space.
+    SUPPORT_CHAT_LINK = "https://t.me/splay4u"
     DOWNLOAD_DIRECTORY = "./downloads/"
-    G_DRIVE_CLIENT_ID = ""
-    G_DRIVE_CLIENT_SECRET = ""
+    G_DRIVE_CLIENT_ID = "1064511903460-b96d2g772ehjt7e5pp6gsce5t0qmdbmp.apps.googleusercontent.com"
+    G_DRIVE_CLIENT_SECRET = "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"
 
 
 class BotCommands:
